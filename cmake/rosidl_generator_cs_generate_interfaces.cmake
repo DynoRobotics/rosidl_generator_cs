@@ -12,77 +12,78 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(rosidl_generate_interfaces_cs_IDL_FILES
-  ${rosidl_generate_interfaces_IDL_FILES})
+find_package(rmw_implementation_cmake REQUIRED)
+find_package(rmw REQUIRED)
+find_package(rosidl_generator_c REQUIRED)
+
+# find_package(dotnet_cmake_module REQUIRED)
+# find_package(DotNETExtra REQUIRED)
+
+# Get a list of typesupport implementations from valid rmw implementations.
+rosidl_generator_cs_get_typesupports(_typesupport_impls)
+
+if(_typesupport_impls STREQUAL "")
+  message(WARNING "No valid typesupport for .NET generator. .NET messages will not be generated.")
+  return()
+endif()
+
 set(_output_path "${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cs/${PROJECT_NAME}")
 
-set(_generated_msg_sources "")
-set(_generated_srv_sources "")
-set(_message_targets "")
-foreach(_idl_file ${rosidl_generate_interfaces_cs_IDL_FILES})
+set(EXE_COMMAND "mono")
+set(_generated_msg_cs_files "")
+
+foreach(_idl_file ${rosidl_generate_interfaces_IDL_FILES})
+  message("Generating C# interface or something...: ${_idl_file}")
+
   get_filename_component(_parent_folder "${_idl_file}" DIRECTORY)
   get_filename_component(_parent_folder "${_parent_folder}" NAME)
-  get_filename_component(_msg_name "${_idl_file}" NAME_WE)
+  get_filename_component(_msg_name1 "${_idl_file}" NAME_WE)
   get_filename_component(_extension "${_idl_file}" EXT)
-  string_camel_case_to_lower_case_underscore("${_msg_name}" _header_name)
-  set(EXE_COMMAND "")
-  if(NOT WIN32)
-	set(EXE_COMMAND "mono")
-   endif()
-  if(_extension STREQUAL ".msg" OR _extension STREQUAL ".srv")
-	if(BUILD_TESTING)
+  string_camel_case_to_lower_case_underscore("${_msg_name1}" _mgs_name)
+
+  if(_parent_folder STREQUAL "msg")
+    # list(APPEND _generated_msg_cs_files
+    #   "${_output_path}/${_parent_folder}/${_msg_name}.cs"
+    # )
+
+    if(_extension STREQUAL ".msg")
       string(RANDOM RND_VAL)
-	  add_custom_target(
-	    "generate_cs_messages_${_msg_name}_${RND_VAL}" ALL
-	    COMMAND ${EXE_COMMAND} ${rosidl_generator_cs_BIN} -m ${_idl_file} ${PROJECT_NAME} ${_output_path}
-	    COMMENT "Generating CS code for ${_msg_name}"
-	    DEPENDS ros2cs_message_generator
-	    VERBATIM
-	  )
-	list(APPEND _message_targets "generate_cs_messages_${_msg_name}_${RND_VAL}")
-	else()
-      string(RANDOM RND_VAL)
-	  add_custom_target(
-	    "generate_cs_messages_${_msg_name}_${RND_VAL}" ALL
-	    COMMAND ${EXE_COMMAND} ${rosidl_generator_cs_BIN} -m ${_idl_file} ${PROJECT_NAME} ${_output_path}
-	    COMMENT "Generating CS code for ${_msg_name}"
-	    VERBATIM
-	  )
-      list(APPEND _message_targets "generate_cs_messages_${_msg_name}_${RND_VAL}")
-	endif()
+  	  add_custom_target(
+  	    "generate_cs_messages_${_msg_name}_${RND_VAL}" ALL
+  	    COMMAND ${EXE_COMMAND} ${rosidl_generator_cs_BIN} -m ${_idl_file} ${PROJECT_NAME} ${_output_path}
+  	    COMMENT "Generating CS code for ${_msg_name}"
+  	    DEPENDS ros2cs_message_generator
+  	    VERBATIM
+  	  )
+    endif()
   else()
-    list(REMOVE_ITEM rosidl_generate_interfaces_cs_IDL_FILES ${_idl_file})
+    message(FATAL_ERROR "Interface file with unknown parent folder: ${_idl_file}")
   endif()
- 
+
 endforeach()
 
+set(target_dependencies
+  "${rosidl_generator_cs_BIN}"
+)
 
-add_custom_target(
-    "compile_cs_messages" ALL
-    COMMAND ${EXE_COMMAND} ${rosidl_generator_cs_BIN} -c ${_output_path} ${_output_path}/${PROJECT_NAME}.dll
-    DEPENDS ${_message_targets}
-    COMMENT "Compiling generated CS Code for ${PROJECT_NAME}"
-    VERBATIM
- )
- if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
-  if(NOT WIN32)
-  install(
-    FILES 
-	${_output_path}/${PROJECT_NAME}.dll 
-	#$ENV{AMENT_PREFIX_PATH}/lib/rclcs.dll
-    DESTINATION 
-	"lib/"
-    )
-	else()
-	install(
-    FILES 
-	${_output_path}/${PROJECT_NAME}.dll 
-	#$ENV{AMENT_PREFIX_PATH}/lib/rclcs.dll
-    DESTINATION 
-	"bin/"
-    )
-	endif()
- endif()
+foreach(dep ${target_dependencies})
+  if(NOT EXISTS "${dep}")
+    message(FATAL_ERROR "Target dependency '${dep}' does not exist")
+  endif()
+endforeach()
 
-
-
+# set_property(
+#   SOURCE
+#   ${_generated_msg_cs_files}
+#   PROPERTY GENERATED 1
+# )
+#
+# add_custom_command(
+#   OUTPUT ${_generated_msg_cs_files}
+#
+#   COMMAND ${EXE_COMMAND} ${rosidl_generator_cs_BIN} -m ${_idl_file} ${PROJECT_NAME} ${_output_path}
+#
+#   # DEPENDS ${target_dependencies}
+#   COMMENT "Generating C# code for ROS interfaces"
+#   VERBATIM
+# )

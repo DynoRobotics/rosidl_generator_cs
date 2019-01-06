@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(rosidl_generator_cs C)
+project(rosidl_generator_cs)
 
 
 
@@ -19,10 +19,13 @@ add_msbuild(
 )
 
 ament_export_dependencies(rosidl_cmake)
+ament_export_dependencies(rosidl_generator_c)
 
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(rosidl_generator_c REQUIRED)
+
   ament_lint_auto_find_test_dependencies()
 
   set(message_files
@@ -55,6 +58,8 @@ if(BUILD_TESTING)
   )
 
   include(cmake/register_cs.cmake)
+  include(cmake/rosidl_generator_cs_get_typesupports.cmake)
+
   set(rosidl_generator_cs_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
   set(rosidl_generator_cs_LIBRARIES "${PROJECT_NAME}")
 
@@ -62,7 +67,9 @@ if(BUILD_TESTING)
     "${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cs.exe"
   )
 
-  rosidl_generate_interfaces(${PROJECT_NAME}_interfaces ${message_files}
+  rosidl_generate_interfaces(${PROJECT_NAME}_custom
+    # ${message_files}
+    "msg/Bool.msg"
     SKIP_INSTALL
   )
 endif()
@@ -74,7 +81,6 @@ ament_package(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cs.exe DESTINATION lib/rosidl_generator_cs)
 #install_assemblies(rosidl_generator_cs  DESTINATION lib/rosidl_generator_cs)
 install(
-  DIRECTORY cmake 
+  DIRECTORY cmake
   DESTINATION share/${PROJECT_NAME}
 )
-
