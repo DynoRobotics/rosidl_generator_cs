@@ -1,4 +1,5 @@
 # Copyright 2016 Open Source Robotics Foundation, Inc.
+# Copyright 2016-2018 Esteve Fernandez <esteve@apache.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+find_package(rmw_implementation_cmake REQUIRED)
 
 macro(accumulate_typesupports)
   set(_typesupport_impl "")
