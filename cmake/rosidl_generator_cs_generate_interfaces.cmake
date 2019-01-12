@@ -20,9 +20,9 @@ find_package(rosidl_typesupport_interface REQUIRED)
 
 find_package(PythonInterp 3.5 REQUIRED)
 
-# find_package(ament_cmake_export_assemblies REQUIRED)
-# find_package(dotnet_cmake_module REQUIRED)
-# find_package(DotNETExtra REQUIRED)
+find_package(ament_cmake_export_assemblies REQUIRED)
+find_package(dotnet_cmake_module REQUIRED)
+find_package(DotNETExtra REQUIRED)
 
 # Get a list of typesupport implementations from valid rmw implementations.
 rosidl_generator_cs_get_typesupports(_typesupport_impls)
@@ -247,7 +247,7 @@ foreach(_typesupport_impl ${_typesupport_impls})
 
   if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     install(TARGETS ${_target_name}
-    DESTINATION lib)
+    DESTINATION lib/${PROJECT_NAME}/dotnet)
   endif()
 
 endforeach()
@@ -255,12 +255,64 @@ endforeach()
 if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
   install(TARGETS ${_target_name_lib}
     ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
+    LIBRARY DESTINATION lib/${PROJECT_NAME}/dotnet
     RUNTIME DESTINATION bin)
 endif()
 
-# TODO(samiam): build dotnet assembly from generated .cs files
+set(_assembly_deps_dll "")
+set(_assembly_deps_nuget "")
 
-# TODO(samiam): install cs interfaces
+find_package(rcldotnet_common REQUIRED)
+foreach(_assembly_dep ${rcldotnet_common_ASSEMBLIES_NUGET})
+  list(APPEND _assembly_deps_nuget "${_assembly_dep}")
+  get_filename_component(_assembly_filename ${_assembly_dep} NAME_WE)
+endforeach()
+
+foreach(_pkg_name ${rosidl_generate_interfaces_DEPENDENCY_PACKAGE_NAMES})
+  find_package(${_pkg_name} REQUIRED)
+  foreach(_assembly_dep ${${_pkg_name}_ASSEMBLIES_NUGET})
+    list(APPEND _assembly_deps_nuget "${_assembly_dep}")
+    get_filename_component(_assembly_filename ${_assembly_dep} NAME_WE)
+  endforeach()
+endforeach()
+
+find_package(rcldotnet_common REQUIRED)
+foreach(_assembly_dep ${rcldotnet_common_ASSEMBLIES_DLL})
+  list(APPEND _assembly_deps_dll "${_assembly_dep}")
+endforeach()
+
+foreach(_pkg_name ${rosidl_generate_interfaces_DEPENDENCY_PACKAGE_NAMES})
+  find_package(${_pkg_name} REQUIRED)
+  foreach(_assembly_dep ${${_pkg_name}_ASSEMBLIES_DLL})
+    list(APPEND _assembly_deps_dll "${_assembly_dep}")
+  endforeach()
+endforeach()
+
+add_dotnet_library(${PROJECT_NAME}_assemblies
+  SOURCES
+  ${_generated_msg_cs_files}
+  ${_generated_srv_cs_files}
+  INCLUDE_DLLS
+  ${_assembly_deps_dll}
+)
+
+add_dependencies("${PROJECT_NAME}_assemblies" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
+
 if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
+  if(NOT _generated_msg_h_files STREQUAL "")
+    install(
+      FILES ${_generated_msg_h_files}
+      DESTINATION "include/${PROJECT_NAME}/msg"
+    )
+  endif()
+
+  set(_install_assembly_dir "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}")
+  if(NOT _generated_msg_cs_files STREQUAL "")
+    list(GET _generated_msg_cs_files 0 _msg_file)
+    get_filename_component(_msg_package_dir "${_msg_file}" DIRECTORY)
+    get_filename_component(_msg_package_dir "${_msg_package_dir}" DIRECTORY)
+
+    install_dotnet(${PROJECT_NAME}_assemblies DESTINATION "lib/${PROJECT_NAME}/dotnet")
+    ament_export_assemblies_dll("lib/${PROJECT_NAME}/dotnet/${PROJECT_NAME}_assemblies.dll")
+  endif()
 endif()

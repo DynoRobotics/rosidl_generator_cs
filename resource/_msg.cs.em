@@ -1,5 +1,5 @@
-# generated from rosidl_generator_cs/resource/_msg.cs.em
-# generated code does not contain a copyright notice
+// generated from rosidl_generator_cs/resource/_msg.cs.em
+// generated code does not contain a copyright notice
 
 @#######################################################################
 @# EmPy template for generating _<msg>.cs files
@@ -14,3 +14,8 @@
 @#  - value_to_py (function)
 @#######################################################################
 @
+using System;
+using System.Runtime.InteropServices;
+
+using ROS2.Interfaces;
+using ROS2.Utils;
