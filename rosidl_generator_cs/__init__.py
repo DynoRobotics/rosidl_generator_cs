@@ -14,7 +14,7 @@
 
 import traceback
 
-from .import_type_support_impl import import_type_support
+# from .import_type_support_impl import import_type_support
 
 __all__ = ['import_type_support']
 
