@@ -165,7 +165,7 @@ set_property(
 
 # TODO(samiam): add set_properties and set_lib_properties macros
 
-set(_target_name_lib "${rosidl_generate_interfaces_TARGET}__csharp")
+set(_target_name_lib "${rosidl_generate_interfaces_TARGET}__csharp_native")
 add_library(${_target_name_lib} SHARED
   ${_generated_msg_c_files}
   ${_generated_srv_c_files}
@@ -193,7 +193,7 @@ rosidl_target_interfaces(${_target_name_lib}
 foreach(_typesupport_impl ${_typesupport_impls})
   find_package(${_typesupport_impl} REQUIRED)
 
-  set(_csext_suffix "__csext")
+  set(_csext_suffix "__csext_native")
   set(_target_name "${PROJECT_NAME}__${_typesupport_impl}${_csext_suffix}")
 
   add_library(${_target_name} SHARED
@@ -247,7 +247,7 @@ foreach(_typesupport_impl ${_typesupport_impls})
 
   if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     install(TARGETS ${_target_name}
-    DESTINATION lib/${PROJECT_NAME}/dotnet)
+    DESTINATION lib)
   endif()
 
 endforeach()
@@ -255,7 +255,7 @@ endforeach()
 if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
   install(TARGETS ${_target_name_lib}
     ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib/${PROJECT_NAME}/dotnet
+    LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 endif()
 
@@ -288,7 +288,7 @@ foreach(_pkg_name ${rosidl_generate_interfaces_DEPENDENCY_PACKAGE_NAMES})
   endforeach()
 endforeach()
 
-add_dotnet_library(${PROJECT_NAME}_assemblies
+add_dotnet_library(${PROJECT_NAME}
   SOURCES
   ${_generated_msg_cs_files}
   ${_generated_srv_cs_files}
@@ -296,7 +296,7 @@ add_dotnet_library(${PROJECT_NAME}_assemblies
   ${_assembly_deps_dll}
 )
 
-add_dependencies("${PROJECT_NAME}_assemblies" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
+add_dependencies("${PROJECT_NAME}" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
 
 if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
   if(NOT _generated_msg_h_files STREQUAL "")
@@ -312,7 +312,7 @@ if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     get_filename_component(_msg_package_dir "${_msg_file}" DIRECTORY)
     get_filename_component(_msg_package_dir "${_msg_package_dir}" DIRECTORY)
 
-    install_dotnet(${PROJECT_NAME}_assemblies DESTINATION "lib/${PROJECT_NAME}/dotnet")
-    ament_export_assemblies_dll("lib/${PROJECT_NAME}/dotnet/${PROJECT_NAME}_assemblies.dll")
+    install_dotnet(${PROJECT_NAME} DESTINATION "lib/dotnet")
+    ament_export_assemblies_dll("lib/dotnet/${PROJECT_NAME}.dll")
   endif()
 endif()

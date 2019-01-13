@@ -18,3 +18,8 @@
 
 #include <@(spec.base_type.pkg_name)/@(subfolder)/@(module_name)__struct.h>
 #include <@(spec.base_type.pkg_name)/@(subfolder)/@(module_name)__functions.h>
+
+int @(module_name)_get_number()
+{
+    return 42;
+}

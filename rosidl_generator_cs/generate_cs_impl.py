@@ -34,7 +34,7 @@ def generate_cs(generator_arguments_file, typesupport_impls):
         '_%s_s.ep.{0}.c'.format(impl): impl for impl in typesupport_impls
     }
 
-    logging.warn("........Generating C# interface code.......")
+    logging.info("Generating C# interface code")
 
     mapping_msgs = {
         os.path.join(template_dir, '_msg.cs.em'): ['_%s.cs'],
