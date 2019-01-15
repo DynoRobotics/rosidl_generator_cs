@@ -19,7 +19,30 @@
 #include <@(spec.base_type.pkg_name)/@(subfolder)/@(module_name)__struct.h>
 #include <@(spec.base_type.pkg_name)/@(subfolder)/@(module_name)__functions.h>
 
-int @(module_name)_get_number()
+@{
+msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_type.type)
+}@
+
+@[for field in spec.fields]@
+@[if field.type.is_primitive_type()]@
+@(primitive_msg_type_to_c(field.type.type)) native_read_field_@(field.name)(void * message_handle)
 {
-    return 42;
+@[  if field.type.is_primitive_type()]@
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+  return ros_message->@(field.name);
+@[  end if]@
 }
+@[end if]@
+@[end for]@
+
+@[for field in spec.fields]@
+@[if field.type.is_primitive_type()]@
+void native_write_field_@(field.name)(void * message_handle, @(primitive_msg_type_to_c(field.type.type)) value)
+{
+@[  if field.type.is_primitive_type()]@
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+  ros_message->@(field.name) = value;
+@[  end if]@
+}
+@[end if]@
+@[end for]@

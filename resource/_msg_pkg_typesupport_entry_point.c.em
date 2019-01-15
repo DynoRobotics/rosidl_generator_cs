@@ -52,3 +52,24 @@ for spec, subfolder in service_specs:
 @[for v in sorted(includes.values())]@
 @(v)
 @[end for]@
+
+@[for spec, subfolder in message_specs]@
+@{
+pkg_name = spec.base_type.pkg_name
+type_name = spec.base_type.type
+module_name = convert_camel_case_to_lower_case_underscore(type_name)
+msg_typename = '%s__%s__%s' % (pkg_name, subfolder, type_name)
+}@
+@[end for]@
+
+@[for spec, subfolder in message_specs]@
+@{
+type_name = convert_camel_case_to_lower_case_underscore(spec.base_type.type)
+}@
+
+ROSIDL_GENERATOR_C_EXPORT
+void * @(pkg_name)__@(subfolder)__@(type_name)__get_type_support()
+{
+    return (void *)ROSIDL_GET_MSG_TYPE_SUPPORT(@(pkg_name), @(subfolder), @(spec.msg_name));
+}
+@[end for]@

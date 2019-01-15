@@ -288,7 +288,7 @@ foreach(_pkg_name ${rosidl_generate_interfaces_DEPENDENCY_PACKAGE_NAMES})
   endforeach()
 endforeach()
 
-add_dotnet_library(${PROJECT_NAME}
+add_dotnet_library(${PROJECT_NAME}_assembly
   SOURCES
   ${_generated_msg_cs_files}
   ${_generated_srv_cs_files}
@@ -296,7 +296,7 @@ add_dotnet_library(${PROJECT_NAME}
   ${_assembly_deps_dll}
 )
 
-add_dependencies("${PROJECT_NAME}" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
+add_dependencies("${PROJECT_NAME}_assembly" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
 
 if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
   if(NOT _generated_msg_h_files STREQUAL "")
@@ -312,7 +312,7 @@ if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     get_filename_component(_msg_package_dir "${_msg_file}" DIRECTORY)
     get_filename_component(_msg_package_dir "${_msg_package_dir}" DIRECTORY)
 
-    install_dotnet(${PROJECT_NAME} DESTINATION "lib/dotnet")
-    ament_export_assemblies_dll("lib/dotnet/${PROJECT_NAME}.dll")
+    install_dotnet(${PROJECT_NAME}_assembly DESTINATION "lib/dotnet")
+    ament_export_assemblies_dll("lib/dotnet/${PROJECT_NAME}_assembly.dll")
   endif()
 endif()
