@@ -18,8 +18,8 @@
 native_methods = 'NativeMethods%s' % (spec.base_type.type)
 }@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
 using ROS2.Interfaces;
 using ROS2.Utils;
 
@@ -63,7 +63,26 @@ native_generator_c_methods = [create_message, destroy_message]
 native_read_field_methods = []
 native_write_field_methods = []
 for field in spec.fields:
-  if not field.type.is_array:
+  if field.type.is_array:
+    native_read_field_methods.append(
+      {'function_name': '%s_native_get_size_%s' % (module_name, field.name),
+       'args': 'IntPtr message_handle',
+       'return_type': 'int',
+       'native_library': 'messageSupportLibrary'})
+
+    native_read_field_methods.append(
+      {'function_name': '%s_native_get_array_ptr_%s' % (module_name, field.name),
+       'args': 'IntPtr message_handle',
+       'return_type': 'IntPtr',
+       'native_library': 'messageSupportLibrary'})
+
+    native_read_field_methods.append(
+      {'function_name': '%s_native_set_array_%s' % (module_name, field.name),
+       'args': 'IntPtr message_handle, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] %s[] data, int size' % get_dotnet_type(field.type),
+       'return_type': 'bool',
+       'native_library': 'messageSupportLibrary'})
+
+  else:
     read_return_type = get_dotnet_type(field.type)
     write_args = 'IntPtr message_handle, %s value' % get_dotnet_type(field.type)
 
@@ -141,7 +160,38 @@ public class @(spec.base_type.type): IRclcsMessage
 
 @[for field in spec.fields]@
 @[  if field.type.is_array]
-// TODO(samiam): Add support for arrays
+  public List<@(get_dotnet_type(field.type))> @(field.name)
+  {
+    get
+    {
+      unsafe
+      {
+        int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+
+        List<@(get_dotnet_type(field.type))> dataList = new List<@(get_dotnet_type(field.type))>();
+        @(get_dotnet_type(field.type))* data =  (@(get_dotnet_type(field.type))*)@(native_methods).@(module_name)_native_get_array_ptr_@(field.name)(handle);
+        for (int i = 0; i < size; i++)
+        {
+          @(get_dotnet_type(field.type)) value = data[i];
+          dataList.Add(value);
+        }
+        return dataList;
+      }
+    }
+    set
+    {
+      unsafe
+      {
+        @(get_dotnet_type(field.type))[] data = new @(get_dotnet_type(field.type))[value.Count];
+        for (int i = 0; i < value.Count; i++)
+        {
+          data[i] = value[i];
+        }
+        @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, data, value.Count);
+      }
+    }
+  }
+
 @[  else]@
 @[    if field.type.is_primitive_type()]@
   public @(get_dotnet_type(field.type)) @(field.name)
