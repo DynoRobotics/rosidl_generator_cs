@@ -36,13 +36,12 @@ internal static class @(native_methods)
   private static readonly IntPtr typeSupportEntryPointLibrary = dllLoadUtils.LoadLibrary(
     "@(spec.base_type.pkg_name)__rosidl_typesupport_c__csext");
 
-  // NOTE(samaim): possibly better to wrap functions in _msg_support.c instaid of accessing directry?
+  // NOTE(samaim): Possibly better to wrap functions in _msg_support.c instaid of accessing directry?
   private static readonly IntPtr typeSupportCLibrary = dllLoadUtils.LoadLibraryNoSuffix(
     "@(spec.base_type.pkg_name)__rosidl_generator_c");
 
   private static readonly IntPtr messageSupportLibrary = dllLoadUtils.LoadLibrary(
   "@(spec.base_type.pkg_name)__csharp");
-
 @{
 get_type_support = {'function_name': '%s__msg__%s__get_type_support' % (package_name, module_name),
                     'args': '',
@@ -64,17 +63,25 @@ native_generator_c_methods = [create_message, destroy_message]
 native_read_field_methods = []
 native_write_field_methods = []
 for field in spec.fields:
-  native_read_field_methods.append(
-    {'function_name': 'native_read_field_%s' % field.name,
-     'args': 'IntPtr message_handle',
-     'return_type': get_dotnet_type(field.type),
-     'native_library': 'messageSupportLibrary'})
+  if not field.type.is_array:
+    read_return_type = get_dotnet_type(field.type)
+    write_args = 'IntPtr message_handle, %s value' % get_dotnet_type(field.type)
 
-  native_write_field_methods.append(
-    {'function_name': 'native_write_field_%s' % field.name,
-     'args': 'IntPtr message_handle, %s value' % get_dotnet_type(field.type),
-     'return_type': 'void',
-     'native_library': 'messageSupportLibrary'})
+    if field.type.type == 'string':
+      read_return_type = 'IntPtr'
+      write_args = 'IntPtr message_handle, [MarshalAs (UnmanagedType.LPStr)] string value'
+
+    native_read_field_methods.append(
+      {'function_name': '%s_native_read_field_%s' % (module_name, field.name),
+       'args': 'IntPtr message_handle',
+       'return_type': read_return_type,
+       'native_library': 'messageSupportLibrary'})
+
+    native_write_field_methods.append(
+      {'function_name': '%s_native_write_field_%s' % (module_name, field.name),
+       'args': write_args,
+       'return_type': 'void',
+       'native_library': 'messageSupportLibrary'})
 
 native_methods_list = []
 native_methods_list.append(get_type_support)
@@ -84,6 +91,7 @@ native_methods_list.extend(native_write_field_methods)
 }
 
 @[for native_method in native_methods_list]@
+  // @(native_method['function_name'])
   [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   internal delegate @(native_method['return_type']) @(native_method['function_name'])__type(@(native_method['args']));
   internal static @(native_method['function_name'])__type
@@ -92,11 +100,11 @@ native_methods_list.extend(native_write_field_methods)
       @(native_method['native_library']),
       "@(native_method['function_name'])"),
       typeof(@(native_method['function_name'])__type));
-@[end for]@
 
+@[end for]@
 }
 
-public class @(spec.base_type.type)
+public class @(spec.base_type.type): IRclcsMessage
 {
   private IntPtr handle;
 
@@ -110,26 +118,51 @@ public class @(spec.base_type.type)
     handle = @(native_methods).@(destroy_message['function_name'])(handle);
   }
 
-  public IntPtr typeSupportHandle
+  public static IntPtr _GET_TYPE_SUPPORT()
+  {
+    return @(native_methods).@(get_type_support['function_name'])();
+  }
+
+  public IntPtr TypeSupportHandle
   {
     get
     {
-      return @(native_methods).@(get_type_support['function_name'])();
+      return _GET_TYPE_SUPPORT();
+    }
+  }
+
+  public IntPtr Handle
+  {
+    get
+    {
+      return handle;
     }
   }
 
 @[for field in spec.fields]@
-  public @(field.type) @(field.name)
+@[  if field.type.is_array]
+// TODO(samiam): Add support for arrays
+@[  else]@
+@[    if field.type.is_primitive_type()]@
+  public @(get_dotnet_type(field.type)) @(field.name)
   {
     get
     {
-      return @(native_methods).native_read_field_@(field.name)(handle);
+@[      if field.type.type == 'string']@
+      return Marshal.PtrToStringAnsi(@(native_methods).@(module_name)_native_read_field_@(field.name)(handle));
+@[      else]@
+      return @(native_methods).@(module_name)_native_read_field_@(field.name)(handle);
+@[      end if]@
     }
     set
     {
-      @(native_methods).native_write_field_@(field.name)(handle, value);
+      @(native_methods).@(module_name)_native_write_field_@(field.name)(handle, value);
     }
   }
+@[    else]@
+// TODO(samiam): Nested types are not supported
+@[    end if]
+@[  end if]
 @[end for]@
 }
 
