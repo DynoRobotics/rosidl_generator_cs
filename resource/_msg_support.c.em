@@ -127,12 +127,10 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
   @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name).data;
 @[    else]
   @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name);
-    printf("In static: ");
 @[    end if]
 
   for(int i = 0; i < size; i++)
   {
-    printf("adding string: %s\n", data[i]);
     rosidl_generator_c__String__assign(&dest[i], data[i]);
   }
   return true;
