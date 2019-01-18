@@ -38,18 +38,26 @@ nested_array_dict = {}
 @{have_not_included_string = False}@
 #include <rosidl_generator_c/string.h>
 #include <rosidl_generator_c/string_functions.h>
+
 @[  end if]@
 @{
 if not field.type.is_primitive_type() and field.type.is_array:
     if field.type.type not in nested_array_dict:
         nested_array_dict[field.type.type] = field.type.pkg_name
 }@
+@[if nested_array_dict != {}]@
+// Nested array functions includes
+@[  for key in nested_array_dict]@
+#include <@(nested_array_dict[key])/msg/@convert_camel_case_to_lower_case_underscore(key)__functions.h>
+@[  end for]@
+// end nested array functions include
+@[end if]@
 @[end for]@
 @{
 msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_type.type)
 }@
 @[for field in spec.fields]@
-@[if field.type.is_array]@
+@[if field.type.is_array and field.type.is_primitive_type()]@
 @[  if field.type.array_size is None or field.type.is_upper_bound]@
 // Get array size @(field.name)
 int @(module_name)_native_get_size_@(field.name)(void * message_handle)
@@ -103,7 +111,7 @@ const char * @(module_name)_native_read_field_@(field.name)(void * message_handl
 @[end if]@
 @[end for]@
 @[for field in spec.fields]@
-@[if field.type.is_array]@
+@[if field.type.is_array and field.type.is_primitive_type()]@
 // Set array @(field.name)
 
 @[  if field.type.type == 'string']@
@@ -171,7 +179,6 @@ void @(module_name)_native_write_field_@(field.name)(void * message_handle, @(pr
 nested_type = '%s__%s__%s' % (field.type.pkg_name, 'msg', field.type.type)
 lowercase_field_type = convert_camel_case_to_lower_case_underscore(field.type.type)
 }@
-// Nested type detected! > @(nested_type)
 void * @(module_name)_get_nested_message_handle_@(field.name)(void * raw_ros_message)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)raw_ros_message;

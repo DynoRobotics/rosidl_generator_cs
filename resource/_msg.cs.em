@@ -227,7 +227,7 @@ nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
   }
 
 @[for field in spec.fields]@
-@[  if field.type.is_array]
+@[  if field.type.is_array and field.type.is_primitive_type()]
   public List<@(get_dotnet_type(field.type))> @(field.name)
   {
     get
