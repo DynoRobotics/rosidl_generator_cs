@@ -64,21 +64,33 @@ native_read_field_methods = []
 native_write_field_methods = []
 for field in spec.fields:
   if field.type.is_array:
+    write_args = 'IntPtr message_handle, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] %s[] data, int size' % get_dotnet_type(field.type)
+    if field.type.type == 'string':
+      native_read_field_methods.append(
+        {'function_name': '%s_native_get_string_by_index_%s' % (module_name, field.name),
+         'args': 'IntPtr message_handle, int index',
+         'return_type': 'string',
+         'native_library': 'messageSupportLibrary'})
+
+      write_args = 'IntPtr message_handle, [MarshalAsAttribute(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPStr)] String[] data, int size'
+    else:
+      native_read_field_methods.append(
+        {'function_name': '%s_native_get_array_ptr_%s' % (module_name, field.name),
+         'args': 'IntPtr message_handle',
+         'return_type': 'IntPtr',
+         'native_library': 'messageSupportLibrary'})
+
+
     native_read_field_methods.append(
       {'function_name': '%s_native_get_size_%s' % (module_name, field.name),
        'args': 'IntPtr message_handle',
        'return_type': 'int',
        'native_library': 'messageSupportLibrary'})
 
-    native_read_field_methods.append(
-      {'function_name': '%s_native_get_array_ptr_%s' % (module_name, field.name),
-       'args': 'IntPtr message_handle',
-       'return_type': 'IntPtr',
-       'native_library': 'messageSupportLibrary'})
 
-    native_read_field_methods.append(
+    native_write_field_methods.append(
       {'function_name': '%s_native_set_array_%s' % (module_name, field.name),
-       'args': 'IntPtr message_handle, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] %s[] data, int size' % get_dotnet_type(field.type),
+       'args': write_args,
        'return_type': 'bool',
        'native_library': 'messageSupportLibrary'})
 
@@ -166,9 +178,23 @@ public class @(spec.base_type.type): IRclcsMessage
     {
       unsafe
       {
+@[      if field.type.type == 'string']
+        List<string> dataList = new List<string>();
+
+        int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+        string str;
+        for(int i = 0; i < size; i++)
+        {
+          str = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
+  				dataList.Add(str);
+        }
+
+        return dataList;
+@[      else]
         int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
 
         List<@(get_dotnet_type(field.type))> dataList = new List<@(get_dotnet_type(field.type))>();
+
         @(get_dotnet_type(field.type))* data =  (@(get_dotnet_type(field.type))*)@(native_methods).@(module_name)_native_get_array_ptr_@(field.name)(handle);
         for (int i = 0; i < size; i++)
         {
@@ -176,18 +202,30 @@ public class @(spec.base_type.type): IRclcsMessage
           dataList.Add(value);
         }
         return dataList;
+@[      end if]
       }
     }
     set
     {
       unsafe
       {
+@[      if field.type.type == 'string']
+          string[] stringArray = new string[value.Count];
+          for(int i = 0; i < value.Count; i++)
+          {
+            stringArray[i] = value[i];
+          }
+
+          @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, stringArray, stringArray.Length);
+
+@[      else]
         @(get_dotnet_type(field.type))[] data = new @(get_dotnet_type(field.type))[value.Count];
         for (int i = 0; i < value.Count; i++)
         {
           data[i] = value[i];
         }
         @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, data, value.Count);
+@[      end if]
       }
     }
   }

@@ -55,7 +55,7 @@ msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_typ
 
 @[for field in spec.fields]@
 @[if field.type.is_array]@
-// Get array
+// Get array size
 int @(module_name)_native_get_size_@(field.name)(void * message_handle)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
@@ -63,12 +63,22 @@ int @(module_name)_native_get_size_@(field.name)(void * message_handle)
   return (int)size;
 }
 
+// Get array data
+@[  if field.type.type == 'string']@
+const char * @(module_name)_native_get_string_by_index_@(field.name)(void * message_handle, int index)
+{
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+  @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name).data;
+  return (const char *)data_ptr[index].data;
+}
+@[  else]
 @(primitive_msg_type_to_c(field.type.type)) * @(module_name)_native_get_array_ptr_@(field.name)(void * message_handle)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
   @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name).data;
   return data_ptr;
 }
+@[  end if]
 @[elif field.type.is_primitive_type()]@
 // Get primitive type
 @[  if field.type.type == 'string']@
@@ -91,15 +101,34 @@ const char * @(module_name)_native_read_field_@(field.name)(void * message_handl
 
 @[for field in spec.fields]@
 @[if field.type.is_array]@
+
+
 // Set array
-bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
+
+@[  if field.type.type == 'string']@
+@# Set string array
+bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const char * data[], int size)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
-@[  if field.type.type == 'string']@
   if(!rosidl_generator_c__String__Sequence__init(&(ros_message->@(field.name)), size))
+  {
+    return false;
+  }
+  @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name).data;
+
+  for(int i = 0; i < size; i++)
+  {
+    rosidl_generator_c__String__assign(&dest[i], data[i]);
+  }
+  return true;
+}
 @[  else]@
+@# Set primitive array
+bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
+{
+  printf("First int: %d\n", data[0]);
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
   if(!rosidl_generator_c__@(field.type.type)__Sequence__init(&(ros_message->@(field.name)), size))
-@[  end if]@
   {
     return false;
   }
@@ -107,6 +136,8 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
   memcpy(dest, data, sizeof(@(primitive_msg_type_to_c(field.type.type)))*size);
   return true;
 }
+@[  end if]@
+
 @[elif field.type.is_primitive_type()]@
 // Set primitive type
 @[  if field.type.type == 'string']@
