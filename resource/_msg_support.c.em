@@ -126,7 +126,6 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
 @# Set primitive array
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
 {
-  printf("First int: %d\n", data[0]);
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
   if(!rosidl_generator_c__@(field.type.type)__Sequence__init(&(ros_message->@(field.name)), size))
   {
