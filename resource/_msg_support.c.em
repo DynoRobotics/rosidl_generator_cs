@@ -55,32 +55,41 @@ msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_typ
 
 @[for field in spec.fields]@
 @[if field.type.is_array]@
-// Get array size
+@[  if field.type.array_size is None or field.type.is_upper_bound]@
+// Get array size @(field.name)
 int @(module_name)_native_get_size_@(field.name)(void * message_handle)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
   size_t size = ros_message->@(field.name).size;
   return (int)size;
 }
-
-// Get array data
+@[  end if]
+// Get array data @(field.name)
 @[  if field.type.type == 'string']@
 const char * @(module_name)_native_get_string_by_index_@(field.name)(void * message_handle, int index)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+@[    if field.type.array_size is None or field.type.is_upper_bound]@
   @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name).data;
+@[    else]
+  @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name);
+@[    end if]
   return (const char *)data_ptr[index].data;
 }
 @[  else]
 @(primitive_msg_type_to_c(field.type.type)) * @(module_name)_native_get_array_ptr_@(field.name)(void * message_handle)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+@[    if field.type.array_size is None or field.type.is_upper_bound]@
   @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name).data;
+@[    else]
+  @(primitive_msg_type_to_c(field.type.type)) * data_ptr = ros_message->@(field.name);
+@[    end if]
   return data_ptr;
 }
 @[  end if]
 @[elif field.type.is_primitive_type()]@
-// Get primitive type
+// Get primitive type @(field.name)
 @[  if field.type.type == 'string']@
 const char * @(module_name)_native_read_field_@(field.name)(void * message_handle)
 @[  else]
@@ -103,21 +112,27 @@ const char * @(module_name)_native_read_field_@(field.name)(void * message_handl
 @[if field.type.is_array]@
 
 
-// Set array
+// Set array @(field.name)
 
 @[  if field.type.type == 'string']@
 @# Set string array
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const char * data[], int size)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+@[    if field.type.array_size is None or field.type.is_upper_bound]@
   if(!rosidl_generator_c__String__Sequence__init(&(ros_message->@(field.name)), size))
   {
     return false;
   }
   @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name).data;
+@[    else]
+  @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name);
+    printf("In static: ");
+@[    end if]
 
   for(int i = 0; i < size; i++)
   {
+    printf("adding string: %s\n", data[i]);
     rosidl_generator_c__String__assign(&dest[i], data[i]);
   }
   return true;
@@ -127,18 +142,22 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+@[    if field.type.array_size is None or field.type.is_upper_bound]@
   if(!rosidl_generator_c__@(field.type.type)__Sequence__init(&(ros_message->@(field.name)), size))
   {
     return false;
   }
   @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name).data;
+@[    else]
+  @(primitive_msg_type_to_c(field.type.type)) * dest = ros_message->@(field.name);
+@[    end if]
   memcpy(dest, data, sizeof(@(primitive_msg_type_to_c(field.type.type)))*size);
   return true;
 }
 @[  end if]@
 
 @[elif field.type.is_primitive_type()]@
-// Set primitive type
+// Set primitive type @(field.name)
 @[  if field.type.type == 'string']@
 void @(module_name)_native_write_field_@(field.name)(void * message_handle, const char * value)
 @[  else]

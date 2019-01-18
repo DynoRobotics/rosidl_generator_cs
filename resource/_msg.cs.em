@@ -81,11 +81,12 @@ for field in spec.fields:
          'native_library': 'messageSupportLibrary'})
 
 
-    native_read_field_methods.append(
-      {'function_name': '%s_native_get_size_%s' % (module_name, field.name),
-       'args': 'IntPtr message_handle',
-       'return_type': 'int',
-       'native_library': 'messageSupportLibrary'})
+    if (field.type.array_size is None or field.type.is_upper_bound):
+      native_read_field_methods.append(
+        {'function_name': '%s_native_get_size_%s' % (module_name, field.name),
+         'args': 'IntPtr message_handle',
+         'return_type': 'int',
+         'native_library': 'messageSupportLibrary'})
 
 
     native_write_field_methods.append(
@@ -179,7 +180,12 @@ public class @(spec.base_type.type): IRclcsMessage
 @[      if field.type.type == 'string']
       List<string> dataList = new List<string>();
 
+@[        if field.type.array_size is None or field.type.is_upper_bound]@
       int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+@[        else]
+      int size = @(field.type.array_size);
+@[      end if]
+
       string str;
       for(int i = 0; i < size; i++)
       {
@@ -191,7 +197,11 @@ public class @(spec.base_type.type): IRclcsMessage
 @[      else]
       unsafe
       {
-        int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+@[        if field.type.array_size is None or field.type.is_upper_bound]@
+      int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+@[        else]
+      int size = @(field.type.array_size);
+@[        end if]
 
         List<@(get_dotnet_type(field.type))> dataList = new List<@(get_dotnet_type(field.type))>();
 
@@ -208,6 +218,7 @@ public class @(spec.base_type.type): IRclcsMessage
     set
     {
 @[      if field.type.type == 'string']
+@[        if field.type.array_size is None or field.type.is_upper_bound]@
           string[] stringArray = new string[value.Count];
           for(int i = 0; i < value.Count; i++)
           {
@@ -215,6 +226,10 @@ public class @(spec.base_type.type): IRclcsMessage
           }
 
           @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, stringArray, stringArray.Length);
+
+@[        else]
+          //TODO(samiam): Setting static string arrays does not work yet
+@[        end if]
 
 @[      else]
         @(get_dotnet_type(field.type))[] data = new @(get_dotnet_type(field.type))[value.Count];
