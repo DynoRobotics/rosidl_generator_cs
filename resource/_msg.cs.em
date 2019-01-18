@@ -176,21 +176,21 @@ public class @(spec.base_type.type): IRclcsMessage
   {
     get
     {
+@[      if field.type.type == 'string']
+      List<string> dataList = new List<string>();
+
+      int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
+      string str;
+      for(int i = 0; i < size; i++)
+      {
+        str = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
+				dataList.Add(str);
+      }
+
+      return dataList;
+@[      else]
       unsafe
       {
-@[      if field.type.type == 'string']
-        List<string> dataList = new List<string>();
-
-        int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
-        string str;
-        for(int i = 0; i < size; i++)
-        {
-          str = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
-  				dataList.Add(str);
-        }
-
-        return dataList;
-@[      else]
         int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
 
         List<@(get_dotnet_type(field.type))> dataList = new List<@(get_dotnet_type(field.type))>();
@@ -202,13 +202,11 @@ public class @(spec.base_type.type): IRclcsMessage
           dataList.Add(value);
         }
         return dataList;
-@[      end if]
       }
+@[      end if]
     }
     set
     {
-      unsafe
-      {
 @[      if field.type.type == 'string']
           string[] stringArray = new string[value.Count];
           for(int i = 0; i < value.Count; i++)
@@ -226,7 +224,6 @@ public class @(spec.base_type.type): IRclcsMessage
         }
         @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, data, value.Count);
 @[      end if]
-      }
     }
   }
 
