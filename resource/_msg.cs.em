@@ -95,7 +95,7 @@ for field in spec.fields:
        'return_type': 'bool',
        'native_library': 'messageSupportLibrary'})
 
-  else:
+  elif field.type.is_primitive_type():
     read_return_type = get_dotnet_type(field.type)
     write_args = 'IntPtr message_handle, %s value' % get_dotnet_type(field.type)
 
@@ -115,13 +115,20 @@ for field in spec.fields:
        'return_type': 'void',
        'native_library': 'messageSupportLibrary'})
 
+  else:
+    native_read_field_methods.append(
+      {'function_name': '%s_get_nested_message_handle_%s' % (module_name, field.name),
+       'args': 'IntPtr message_handle',
+       'return_type': 'IntPtr',
+       'native_library': 'messageSupportLibrary'})
+
+
 native_methods_list = []
 native_methods_list.append(get_type_support)
 native_methods_list.extend(native_generator_c_methods)
 native_methods_list.extend(native_read_field_methods)
 native_methods_list.extend(native_write_field_methods)
 }
-
 @[for native_method in native_methods_list]@
   // @(native_method['function_name'])
   [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -139,15 +146,63 @@ native_methods_list.extend(native_write_field_methods)
 public class @(spec.base_type.type): IRclcsMessage
 {
   private IntPtr handle;
+  private bool isTopLevelMsg;
+
+@[for field in spec.fields]@
+@[  if not field.type.is_array and not field.type.is_primitive_type()]
+@{
+nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
+}@
+  // Nested type detected! > @(nested_type)
+  @(nested_type) @(field.name)_;
+@[  end if]
+@[end for]@
+
+@[for field in spec.fields]@
+@[  if not field.type.is_array and not field.type.is_primitive_type()]
+@{
+nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
+}@
+  public @(nested_type) @(field.name) {
+    get
+    {
+      return @(field.name)_;
+    }
+  }
+@[  end if]
+@[end for]@
 
   public @(spec.base_type.type)()
   {
+    isTopLevelMsg = true;
     handle = @(native_methods).@(create_message['function_name'])();
+    SetNestedHandles();
+  }
+
+  public @(spec.base_type.type)(IntPtr handle)
+  {
+    this.handle = handle;
+    SetNestedHandles();
+  }
+
+  private void SetNestedHandles()
+  {
+@[for field in spec.fields]@
+@[  if not field.type.is_array and not field.type.is_primitive_type()]
+@{
+nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
+}@
+    @(field.name)_ = new @(nested_type)(@(native_methods).@(module_name)_get_nested_message_handle_@(field.name)(handle));
+@[  end if]
+@[end for]@
   }
 
   ~@(spec.base_type.type)()
   {
-    handle = @(native_methods).@(destroy_message['function_name'])(handle);
+    if(isTopLevelMsg)
+    {
+      handle = @(native_methods).@(destroy_message['function_name'])(handle);
+    }
   }
 
   public static IntPtr _GET_TYPE_SUPPORT()
@@ -179,20 +234,17 @@ public class @(spec.base_type.type): IRclcsMessage
     {
 @[      if field.type.type == 'string']
       List<string> dataList = new List<string>();
-
 @[        if field.type.array_size is None or field.type.is_upper_bound]@
       int size = @(native_methods).@(module_name)_native_get_size_@(field.name)(handle);
 @[        else]
       int size = @(field.type.array_size);
 @[      end if]
-
       string str;
       for(int i = 0; i < size; i++)
       {
         str = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
 				dataList.Add(str);
       }
-
       return dataList;
 @[      else]
       unsafe
@@ -202,9 +254,7 @@ public class @(spec.base_type.type): IRclcsMessage
 @[        else]
       int size = @(field.type.array_size);
 @[        end if]
-
         List<@(get_dotnet_type(field.type))> dataList = new List<@(get_dotnet_type(field.type))>();
-
         @(get_dotnet_type(field.type))* data =  (@(get_dotnet_type(field.type))*)@(native_methods).@(module_name)_native_get_array_ptr_@(field.name)(handle);
         for (int i = 0; i < size; i++)
         {
@@ -224,13 +274,10 @@ public class @(spec.base_type.type): IRclcsMessage
           {
             stringArray[i] = value[i];
           }
-
           @(native_methods).@(module_name)_native_set_array_@(field.name)(handle, stringArray, stringArray.Length);
-
 @[        else]
           //TODO(samiam): Setting static string arrays does not work yet
 @[        end if]
-
 @[      else]
         @(get_dotnet_type(field.type))[] data = new @(get_dotnet_type(field.type))[value.Count];
         for (int i = 0; i < value.Count; i++)
@@ -242,8 +289,7 @@ public class @(spec.base_type.type): IRclcsMessage
     }
   }
 
-@[  else]@
-@[    if field.type.is_primitive_type()]@
+@[  elif field.type.is_primitive_type()]@
   public @(get_dotnet_type(field.type)) @(field.name)
   {
     get
@@ -261,7 +307,6 @@ public class @(spec.base_type.type): IRclcsMessage
   }
 @[    else]@
 // TODO(samiam): Nested types are not supported
-@[    end if]
 @[  end if]
 @[end for]@
 }
