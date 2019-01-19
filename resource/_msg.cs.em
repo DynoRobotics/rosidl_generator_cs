@@ -206,6 +206,7 @@ nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
       if(isTopLevelMsg)
       {
         handle = @(native_methods).@(destroy_message['function_name'])(handle);
+        disposed = true;
       }
     }
   }
