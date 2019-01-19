@@ -146,6 +146,8 @@ native_methods_list.extend(native_write_field_methods)
 public class @(spec.base_type.type): IRclcsMessage
 {
   private IntPtr handle;
+
+  private bool disposed;
   private bool isTopLevelMsg;
 
 @[for field in spec.fields]@
@@ -197,12 +199,20 @@ nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
 @[end for]@
   }
 
+  public void Dispose()
+  {
+    if(!disposed)
+    {
+      if(isTopLevelMsg)
+      {
+        handle = @(native_methods).@(destroy_message['function_name'])(handle);
+      }
+    }
+  }
+
   ~@(spec.base_type.type)()
   {
-    if(isTopLevelMsg)
-    {
-      handle = @(native_methods).@(destroy_message['function_name'])(handle);
-    }
+    Dispose();
   }
 
   public static IntPtr _GET_TYPE_SUPPORT()
