@@ -185,6 +185,7 @@ void @(module_name)_native_write_field_@(field.name)(void * message_handle, @(pr
 nested_type = '%s__%s__%s' % (field.type.pkg_name, 'msg', field.type.type)
 lowercase_field_type = convert_camel_case_to_lower_case_underscore(field.type.type)
 }@
+ROSIDL_GENERATOR_C_EXPORT
 void * @(module_name)_get_nested_message_handle_@(field.name)(void * raw_ros_message)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)raw_ros_message;
