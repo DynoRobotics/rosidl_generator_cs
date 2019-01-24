@@ -60,6 +60,7 @@ msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_typ
 @[if field.type.is_array and field.type.is_primitive_type()]@
 @[  if field.type.array_size is None or field.type.is_upper_bound]@
 // Get array size @(field.name)
+ROSIDL_GENERATOR_C_EXPORT
 int @(module_name)_native_get_size_@(field.name)(void * message_handle)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
@@ -68,6 +69,7 @@ int @(module_name)_native_get_size_@(field.name)(void * message_handle)
 }
 @[  end if]
 // Get array data @(field.name)
+ROSIDL_GENERATOR_C_EXPORT
 @[  if field.type.type == 'string']@
 const char * @(module_name)_native_get_string_by_index_@(field.name)(void * message_handle, int index)
 {
@@ -93,6 +95,7 @@ const char * @(module_name)_native_get_string_by_index_@(field.name)(void * mess
 @[  end if]
 @[elif field.type.is_primitive_type()]@
 // Get primitive type @(field.name)
+ROSIDL_GENERATOR_C_EXPORT
 @[  if field.type.type == 'string']@
 const char * @(module_name)_native_read_field_@(field.name)(void * message_handle)
 @[  else]
@@ -116,6 +119,7 @@ const char * @(module_name)_native_read_field_@(field.name)(void * message_handl
 
 @[  if field.type.type == 'string']@
 @# Set string array
+ROSIDL_GENERATOR_C_EXPORT
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const char * data[], int size)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
@@ -137,6 +141,7 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
 }
 @[  else]@
 @# Set primitive array
+ROSIDL_GENERATOR_C_EXPORT
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
 {
   @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
@@ -156,6 +161,7 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
 
 @[elif field.type.is_primitive_type()]@
 // Set primitive type @(field.name)
+ROSIDL_GENERATOR_C_EXPORT
 @[  if field.type.type == 'string']@
 void @(module_name)_native_write_field_@(field.name)(void * message_handle, const char * value)
 @[  else]
