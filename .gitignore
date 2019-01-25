@@ -3,4 +3,4 @@
 /src/bin
 /src/obj
 *.userprefs
-
+*.pyc
