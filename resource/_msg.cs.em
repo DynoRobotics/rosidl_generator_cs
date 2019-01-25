@@ -69,7 +69,7 @@ for field in spec.fields:
       native_read_field_methods.append(
         {'function_name': '%s_native_get_string_by_index_%s' % (module_name, field.name),
          'args': 'IntPtr message_handle, int index',
-         'return_type': 'string',
+         'return_type': 'IntPtr',
          'native_library': 'messageSupportLibrary'})
 
       write_args = 'IntPtr message_handle, [MarshalAsAttribute(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPStr)] String[] data, int size'
@@ -251,9 +251,11 @@ nested_type = '%s.%s.%s' % (field.type.pkg_name, 'msg', field.type.type)
       int size = @(field.type.array_size);
 @[      end if]
       string str;
+      IntPtr strPtr;
       for(int i = 0; i < size; i++)
       {
-        str = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
+        strPtr = @(native_methods).@(module_name)_native_get_string_by_index_@(field.name)(handle, i);
+        str = Marshal.PtrToStringAnsi(strPtr);
 				dataList.Add(str);
       }
       return dataList;
