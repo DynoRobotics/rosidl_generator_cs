@@ -247,9 +247,7 @@ foreach(_typesupport_impl ${_typesupport_impls})
 
   if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     install(TARGETS ${_target_name}
-    # NOTE(samiam): Putting this in bin instaid of lib because you can
-    # use in Unity by sourcing local_install.bat in shell
-    DESTINATION bin)
+    DESTINATION lib)
   endif()
 
 endforeach()
