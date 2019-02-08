@@ -53,12 +53,12 @@ if not field.type.is_primitive_type() and field.type.is_array:
 // end nested array functions include
 @[end if]@
 @[end for]@
+
 @{
 msg_typename = '%s__%s__%s' % (spec.base_type.pkg_name, subfolder, spec.base_type.type)
 }@
 @[for field in spec.fields]@
-@[if field.type.is_array and field.type.is_primitive_type()]@
-@[  if field.type.array_size is None or field.type.is_upper_bound]@
+@[  if field.type.is_array and (field.type.array_size is None or field.type.is_upper_bound)]@
 // Get array size @(field.name)
 ROSIDL_GENERATOR_C_EXPORT
 int @(module_name)_native_get_size_@(field.name)(void * message_handle)
@@ -68,6 +68,7 @@ int @(module_name)_native_get_size_@(field.name)(void * message_handle)
   return (int)size;
 }
 @[  end if]
+@[if field.type.is_array and field.type.is_primitive_type()]@
 // Get array data @(field.name)
 ROSIDL_GENERATOR_C_EXPORT
 @[  if field.type.type == 'string']@
@@ -93,6 +94,20 @@ const char * @(module_name)_native_get_string_by_index_@(field.name)(void * mess
   return data_ptr;
 }
 @[  end if]
+@[elif field.type.is_array]@
+// Get data from array of nested types @(field.name)
+ROSIDL_GENERATOR_C_EXPORT
+void * @(module_name)_native_get_handle_by_index_@(field.name)(void * message_handle, int index)
+{
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+
+@[    if field.type.array_size is None or field.type.is_upper_bound]@
+    return &(ros_message->@(field.name).data[index]);
+@[    else]
+    //TODO(sam): add support for static arrays
+    return 0;
+@[    end if]
+}
 @[elif field.type.is_primitive_type()]@
 // Get primitive type @(field.name)
 ROSIDL_GENERATOR_C_EXPORT
@@ -114,7 +129,7 @@ const char * @(module_name)_native_read_field_@(field.name)(void * message_handl
 @[end if]@
 @[end for]@
 @[for field in spec.fields]@
-@[if field.type.is_array and field.type.is_primitive_type()]@
+@[if field.type.is_array]@
 // Set array @(field.name)
 
 @[  if field.type.type == 'string']@
@@ -139,7 +154,7 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
   }
   return true;
 }
-@[  else]@
+@[  elif field.type.is_primitive_type()]@
 @# Set primitive array
 ROSIDL_GENERATOR_C_EXPORT
 bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const @(primitive_msg_type_to_c(field.type.type)) * data, int size)
@@ -157,6 +172,34 @@ bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const 
   memcpy(dest, data, sizeof(@(primitive_msg_type_to_c(field.type.type)))*size);
   return true;
 }
+@[  else]@
+@# Set array of nested types
+@{
+nested_type = '%s__%s__%s' % (field.type.pkg_name, 'msg', field.type.type)
+lowercase_field_type = convert_camel_case_to_lower_case_underscore(field.type.type)
+}@
+
+ROSIDL_GENERATOR_C_EXPORT
+bool @(module_name)_native_set_array_@(field.name)(void * message_handle, const void * handle_array[], int size)
+{
+  //TODO(sam): Add suport for copying existing array of nested messages to this message
+  return false;
+}
+
+@# Init array of nested types
+ROSIDL_GENERATOR_C_EXPORT
+bool @(module_name)_native_init_nested_array_@(field.name)(void * message_handle, int size)
+{
+  @(msg_typename) * ros_message = (@(msg_typename) *)message_handle;
+
+  if(!@(nested_type)__Sequence__init(&(ros_message->@(field.name)), size))
+  {
+    return false;
+  }
+
+  return true;
+}
+
 @[  end if]@
 
 @[elif field.type.is_primitive_type()]@
