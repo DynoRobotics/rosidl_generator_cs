@@ -248,7 +248,9 @@ foreach(_typesupport_impl ${_typesupport_impls})
  # NOTE(sam): Sourcing for Unity only seems to work if destination in bin, not lib
   if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
     install(TARGETS ${_target_name}
-    DESTINATION bin)
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
   endif()
 
 endforeach()
