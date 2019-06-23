@@ -50,7 +50,6 @@ foreach(_abs_idl_file ${rosidl_generate_interfaces_ABS_IDL_FILES})
   get_filename_component(_idl_name "${_abs_idl_file}" NAME_WE)
   # get_filename_component(_ext "${_idl_file}" EXT)
   string_camel_case_to_lower_case_underscore("${_idl_name}" _module_name)
-  message("<<<<<<<<<<<<<<<<<<<<<<< module name: ${_idl_name}")
   list(APPEND _generated_cs_files
     "${_output_path}/${_parent_folder}/_${_module_name}.cs")
   list(APPEND _generated_c_files
@@ -324,30 +323,30 @@ foreach(_pkg_name ${rosidl_generate_interfaces_DEPENDENCY_PACKAGE_NAMES})
   endforeach()
 endforeach()
 
-add_dotnet_library(${PROJECT_NAME}_assembly
-  SOURCES
-  ${_generated_cs_files}
-  INCLUDE_DLLS
-  ${_assembly_deps_dll}
-)
-
-add_dependencies("${PROJECT_NAME}_assembly" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
-
-if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
-  if(NOT _generated_msg_h_files STREQUAL "")
-    install(
-      FILES ${_generated_msg_h_files}
-      DESTINATION "include/${PROJECT_NAME}/msg"
-    )
-  endif()
-
-  set(_install_assembly_dir "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}")
-  if(NOT _generated_cs_files STREQUAL "")
-    list(GET _generated_cs_files 0 _file)
-    get_filename_component(_package_dir "${_file}" DIRECTORY)
-    get_filename_component(_package_dir "${_msg_package_dir}" DIRECTORY)
-
-    install_dotnet(${PROJECT_NAME}_assembly DESTINATION "lib/dotnet")
-    ament_export_assemblies_dll("lib/dotnet/${PROJECT_NAME}_assembly.dll")
-  endif()
-endif()
+# add_dotnet_library(${PROJECT_NAME}_assembly
+#   SOURCES
+#   ${_generated_cs_files}
+#   INCLUDE_DLLS
+#   ${_assembly_deps_dll}
+# )
+#
+# add_dependencies("${PROJECT_NAME}_assembly" "${rosidl_generate_interfaces_TARGET}${_target_suffix}")
+#
+# if(NOT rosidl_generate_interfaces_SKIP_INSTALL)
+#   if(NOT _generated_msg_h_files STREQUAL "")
+#     install(
+#       FILES ${_generated_msg_h_files}
+#       DESTINATION "include/${PROJECT_NAME}/msg"
+#     )
+#   endif()
+#
+#   set(_install_assembly_dir "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}")
+#   if(NOT _generated_cs_files STREQUAL "")
+#     list(GET _generated_cs_files 0 _file)
+#     get_filename_component(_package_dir "${_file}" DIRECTORY)
+#     get_filename_component(_package_dir "${_msg_package_dir}" DIRECTORY)
+#
+#     install_dotnet(${PROJECT_NAME}_assembly DESTINATION "lib/dotnet")
+#     ament_export_assemblies_dll("lib/dotnet/${PROJECT_NAME}_assembly.dll")
+#   endif()
+# endif()

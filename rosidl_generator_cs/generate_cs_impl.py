@@ -52,7 +52,6 @@ def generate_cs(generator_arguments_file, typesupport_impls):
     modules = {}
     idl_content = IdlContent()
     for idl_tuple in args.get('idl_tuples', []):
-        logging.warn(idl_tuple)
         idl_parts = idl_tuple.rsplit(':', 1)
         assert len(idl_parts) == 2
 
@@ -89,12 +88,10 @@ def generate_cs(generator_arguments_file, typesupport_impls):
             generated_file = os.path.join(
                 args['output_dir'], generated_filename % package_name
             )
-            logging.warn('Template: ' + template_file)
             expand_template(
                 template_file, data, generated_file,
                 minimum_timestamp=latest_target_timestamp)
 
-    logging.warn("Done generating dotnet interface code")
     return 0
 
 

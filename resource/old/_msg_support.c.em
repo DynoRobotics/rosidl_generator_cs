@@ -109,7 +109,7 @@ void * @(module_name)_native_get_handle_by_index_@(field.name)(void * message_ha
 @[    end if]
 }
 @[elif field.type.is_primitive_type()]@
-// Get primitive type @(field.name)
+// Get basic type @(field.name)
 ROSIDL_GENERATOR_C_EXPORT
 @[  if field.type.type == 'string']@
 const char * @(module_name)_native_read_field_@(field.name)(void * message_handle)
