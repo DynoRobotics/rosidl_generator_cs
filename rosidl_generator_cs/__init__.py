@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import traceback
 
-# from .import_type_support_impl import import_type_support
+from .import_type_support_impl import import_type_support
 
 __all__ = ['import_type_support']
 

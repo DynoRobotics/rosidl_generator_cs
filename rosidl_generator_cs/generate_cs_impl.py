@@ -12,107 +12,89 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ast import literal_eval
 from collections import defaultdict
 import os
+import pathlib
 
 from rosidl_cmake import convert_camel_case_to_lower_case_underscore
 from rosidl_cmake import expand_template
+from rosidl_cmake import generate_files
 from rosidl_cmake import get_newest_modification_time
 from rosidl_cmake import read_generator_arguments
-from rosidl_generator_c import primitive_msg_type_to_c
-from rosidl_parser import parse_message_file
-from rosidl_parser import parse_service_file
+# from rosidl_generator_c import primitive_msg_type_to_c
+# from rosidl_parser import parse_message_file
+# from rosidl_parser import parse_service_file
+
+from rosidl_parser.definition import IdlContent
+from rosidl_parser.definition import IdlLocator
+
+from rosidl_parser.parser import parse_idl_file
 
 import logging
 
 
+from rosidl_parser.definition import Message
+
+
 def generate_cs(generator_arguments_file, typesupport_impls):
+    logging.warn("Generating .NET interface code")
+
+    mapping = {
+        '_idl.cs.em': '_%s.cs',
+        '_idl_support.c.em': '_%s_s.c',
+    }
+    generate_files(generator_arguments_file, mapping)
+
     args = read_generator_arguments(generator_arguments_file)
+    package_name = args['package_name']
+
+    modules = {}
+    idl_content = IdlContent()
+    for idl_tuple in args.get('idl_tuples', []):
+        logging.warn(idl_tuple)
+        idl_parts = idl_tuple.rsplit(':', 1)
+        assert len(idl_parts) == 2
+
+        idl_rel_path = pathlib.Path(idl_parts[1])
+        idl_stems = modules.setdefault(str(idl_rel_path.parent), set())
+        idl_stems.add(idl_rel_path.stem)
+
+        locator = IdlLocator(*idl_parts)
+        idl_file = parse_idl_file(locator)
+        idl_content.elements += idl_file.content.elements
 
     template_dir = args['template_dir']
     type_support_impl_by_filename = {
         '_%s_s.ep.{0}.c'.format(impl): impl for impl in typesupport_impls
     }
-
-    logging.info("Generating C# interface code")
-
-    mapping_msgs = {
-        os.path.join(template_dir, '_msg.cs.em'): ['_%s.cs'],
-        os.path.join(template_dir, '_msg_support.c.em'): ['_%s_s.c'],
-    }
     mapping_msg_pkg_extension = {
-        os.path.join(template_dir, '_msg_pkg_typesupport_entry_point.c.em'):
+        os.path.join(template_dir, '_idl_pkg_typesupport_entry_point.c.em'):
         type_support_impl_by_filename.keys(),
     }
-    mapping_srvs = {
-        os.path.join(template_dir, '_srv.cs.em'): ['_%s.cs'],
-    }
 
-    for template_file in mapping_msgs.keys():
-        assert os.path.exists(template_file), 'Could not find template: ' + template_file
     for template_file in mapping_msg_pkg_extension.keys():
         assert os.path.exists(template_file), 'Could not find template: ' + template_file
-    for template_file in mapping_srvs.keys():
-        assert os.path.exists(template_file), 'Could not find template: ' + template_file
-
-    functions = {
-        'convert_camel_case_to_lower_case_underscore': convert_camel_case_to_lower_case_underscore,
-        'primitive_msg_type_to_c': primitive_msg_type_to_c,
-        'get_dotnet_type': get_dotnet_type,
-    }
 
     latest_target_timestamp = get_newest_modification_time(args['target_dependencies'])
 
-    modules = defaultdict(list)
-    message_specs = []
-    service_specs = []
-    for ros_interface_file in args['ros_interface_files']:
-        extension = os.path.splitext(ros_interface_file)[1]
-        subfolder = os.path.basename(os.path.dirname(ros_interface_file))
-        if extension == '.msg':
-            spec = parse_message_file(args['package_name'], ros_interface_file)
-            message_specs.append((spec, subfolder))
-            mapping = mapping_msgs
-            type_name = spec.base_type.type
-        elif extension == '.srv':
-            spec = parse_service_file(args['package_name'], ros_interface_file)
-            service_specs.append((spec, subfolder))
-            mapping = mapping_srvs
-            type_name = spec.srv_name
-        else:
-            continue
-
-        module_name = convert_camel_case_to_lower_case_underscore(type_name)
-        modules[subfolder].append((module_name, type_name))
-        for template_file, generated_filenames in mapping.items():
-            for generated_filename in generated_filenames:
-                data = {
-                    'module_name': module_name,
-                    'package_name': args['package_name'],
-                    'spec': spec, 'subfolder': subfolder,
-                }
-                data.update(functions)
-                generated_file = os.path.join(
-                    args['output_dir'], subfolder, generated_filename % module_name)
-                expand_template(
-                    template_file, data, generated_file,
-                    minimum_timestamp=latest_target_timestamp)
-
     for template_file, generated_filenames in mapping_msg_pkg_extension.items():
         for generated_filename in generated_filenames:
+            package_name = args['package_name'],
             data = {
                 'package_name': args['package_name'],
-                'message_specs': message_specs,
-                'service_specs': service_specs,
+                'content': idl_content,
                 'typesupport_impl': type_support_impl_by_filename.get(generated_filename, ''),
             }
-            data.update(functions)
             generated_file = os.path.join(
-                args['output_dir'], generated_filename % args['package_name'])
+                args['output_dir'], generated_filename % package_name
+            )
+            logging.warn('Template: ' + template_file)
             expand_template(
                 template_file, data, generated_file,
                 minimum_timestamp=latest_target_timestamp)
 
+    logging.warn("Done generating dotnet interface code")
     return 0
 
 

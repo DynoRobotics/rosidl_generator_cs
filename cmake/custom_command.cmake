@@ -20,12 +20,12 @@
 # add_subdirectory() call.
 
 add_custom_command(
-  OUTPUT ${_generated_extension_files} ${_generated_msg_cs_files} ${_generated_msg_c_files} ${_generated_srv_cs_files} ${_generated_srv_c_files} ${_generated_action_cs_files} ${_generated_action_c_files}
+  OUTPUT ${_generated_extension_files} ${_generated_cs_files} ${_generated_c_files}
   COMMAND ${PYTHON_EXECUTABLE} ${rosidl_generator_cs_BIN}
   --generator-arguments-file "${generator_arguments_file}"
   --typesupport-impls "${_typesupport_impls}"
   DEPENDS ${target_dependencies} ${rosidl_generate_interfaces_TARGET}
-  COMMENT "Generating C# code for ROS interfaces"
+  COMMENT "Generating .NET code for ROS interfaces"
   VERBATIM
 )
 
@@ -36,11 +36,7 @@ else()
     ${rosidl_generate_interfaces_TARGET}${_target_suffix} ALL # TODO(samiam): remove ALL
     DEPENDS
     ${_generated_extension_files}
-    ${_generated_msg_cs_files}
-    ${_generated_msg_c_files}
-    ${_generated_srv_cs_files}
-    ${_generated_srv_c_files}
-    ${_generated_action_cs_files}
-    ${_generated_action_c_files}
+    ${_generated_cs_files}
+    ${_generated_c_files}
   )
 endif()
