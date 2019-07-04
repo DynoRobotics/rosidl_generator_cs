@@ -12,3 +12,22 @@
 @#######################################################################
 
 // idl.cs
+@{
+import_statements = set()
+}@
+@
+@#######################################################################
+@# Handle messages
+@#######################################################################
+@{
+from rosidl_parser.definition import Message
+}@
+@[for message in content.get_elements_of_type(Message)]@
+@{
+TEMPLATE(
+    '_msg.cs.em',
+    package_name=package_name, interface_path=interface_path, message=message,
+    import_statements=import_statements)
+}@
+@[end for]@
+@

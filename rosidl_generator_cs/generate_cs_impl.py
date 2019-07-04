@@ -22,9 +22,17 @@ from rosidl_cmake import expand_template
 from rosidl_cmake import generate_files
 from rosidl_cmake import get_newest_modification_time
 from rosidl_cmake import read_generator_arguments
-# from rosidl_generator_c import primitive_msg_type_to_c
-# from rosidl_parser import parse_message_file
-# from rosidl_parser import parse_service_file
+from rosidl_parser.definition import AbstractGenericString
+from rosidl_parser.definition import AbstractNestedType
+from rosidl_parser.definition import AbstractSequence
+from rosidl_parser.definition import Array
+from rosidl_parser.definition import BasicType
+from rosidl_parser.definition import CHARACTER_TYPES
+from rosidl_parser.definition import FLOATING_POINT_TYPES
+from rosidl_parser.definition import IdlContent
+from rosidl_parser.definition import IdlLocator
+from rosidl_parser.definition import INTEGER_TYPES
+from rosidl_parser.definition import NamespacedType
 
 from rosidl_parser.definition import IdlContent
 from rosidl_parser.definition import IdlLocator
@@ -96,53 +104,47 @@ def generate_cs(generator_arguments_file, typesupport_impls):
 
 
 def get_builtin_dotnet_type(type_, use_primitives=True):
-    if type_ == 'bool':
-        return 'bool' if use_primitives else 'System.Boolean'
 
-    if type_ == 'byte':
-        return 'byte' if use_primitives else 'System.Byte'
+    if isinstance(type_, BasicType):
 
-    if type_ == 'char':
-        return 'char' if use_primitives else 'System.Char'
+        if type_.typename == 'boolean':
+            return 'bool' if use_primitives else 'System.Boolean'
+        if type_.typename == 'octet':
+            return 'byte' if use_primitives else 'System.Byte'
+        if type_.typename == 'char':
+            return 'char' if use_primitives else 'System.Char'
 
-    if type_ == 'float32':
-        return 'float' if use_primitives else 'System.Single'
 
-    if type_ == 'float64':
-        return 'double' if use_primitives else 'System.Double'
+        if type_.typename == 'float':
+            return 'float' if use_primitives else 'System.Single'
 
-    if type_ == 'int8':
-        return 'sbyte' if use_primitives else 'System.Sbyte'
+        if type_.typename == 'double':
+            return 'float' if use_primitives else 'System.Double'
 
-    if type_ == 'uint8':
-        return 'byte' if use_primitives else 'System.Byte'
+        if type_.typename == 'int8':
+            return 'sbyte' if use_primitives else 'System.Sbyte'
+        if type_.typename == 'uint8':
+            return 'byte' if use_primitives else 'System.Byte'
+        if type_.typename == 'int16':
+            return 'short' if use_primitives else 'System.Int16'
+        if type_.typename == 'uint16':
+            return 'ushort' if use_primitives else 'System.UInt16'
+        if type_.typename == 'int32':
+            return 'int' if use_primitives else 'System.Int32'
+        if type_.typename == 'uint32':
+            return 'uint' if use_primitives else 'System.UInt32'
+        if type_.typename == 'int64':
+            return 'long' if use_primitives else 'System.Int64'
+        if type_.typename == 'uint64':
+            return 'ulong' if use_primitives else 'System.UInt64'
+        if type_.typename == 'string':
+            return 'System.String'
 
-    if type_ == 'int16':
-        return 'short' if use_primitives else 'System.Int16'
-
-    if type_ == 'uint16':
-        return 'ushort' if use_primitives else 'System.UInt16'
-
-    if type_ == 'int32':
-        return 'int' if use_primitives else 'System.Int32'
-
-    if type_ == 'uint32':
-        return 'uint' if use_primitives else 'System.UInt32'
-
-    if type_ == 'int64':
-        return 'long' if use_primitives else 'System.Int64'
-
-    if type_ == 'uint64':
-        return 'ulong' if use_primitives else 'System.UInt64'
-
-    if type_ == 'string':
-        return 'System.String'
-
-    assert False, "unknown type '%s'" % type_
+    assert False, "unknown type '%s'" % type_.typename
 
 
 def get_dotnet_type(type_, use_primitives=True):
-    if not type_.is_primitive_type():
+    if not isinstance(type_, BasicType):
         return type_.pkg_name + ".msg." + type_.type
 
-    return get_builtin_dotnet_type(type_.type, use_primitives=use_primitives)
+    return get_builtin_dotnet_type(type_, use_primitives=use_primitives)
