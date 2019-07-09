@@ -72,15 +72,36 @@ destroy_message = {'function_name': '%s__destroy' % msg_typename,
                    'return_type': 'IntPtr',
                    'native_library': 'typeSupportCLibrary'}
 
-for member in message.structure.members:
-  if isinstance(member.type, BasicType):
-    read_return_type = get_dotnet_type(member.type)
-
 native_generator_c_methods = [create_message, destroy_message]
 
 native_read_field_methods = []
 native_write_field_methods = []
 native_init_field_methods = []
+
+for member in message.structure.members:
+  if isinstance(member.type, BasicType):
+
+    msg_full_name = '__'.join(
+      message.structure.namespaced_type.namespaces +
+      [convert_camel_case_to_lower_case_underscore(message.structure.namespaced_type.name)] +
+      [member.name])
+
+    # TODO(sam): check if string
+    read_return_type = get_dotnet_type(member.type)
+    write_args = 'IntPtr message_handle, %s value' % get_dotnet_type(member.type)
+
+    native_read_field_methods.append(
+      {'function_name': '%s__native_read' % (msg_full_name),
+       'args': 'IntPtr message_handle',
+       'return_type': read_return_type,
+       'native_library': 'messageSupportLibrary'})
+
+    native_write_field_methods.append(
+      {'function_name': '%s_native_write' % (msg_full_name),
+       'args': write_args,
+       'return_type': 'void',
+       'native_library': 'messageSupportLibrary'})
+
 
 native_methods_list = []
 native_methods_list.append(get_type_support)
@@ -102,5 +123,21 @@ native_methods_list.extend(native_init_field_methods)
       typeof(@(native_method['function_name'])__type));
 
 @[end for]@
+
+}
+
+public class @(message.structure.namespaced_type.name): IRclcsMessage
+{
+private IntPtr handle;
+
+  private bool disposed;
+  private bool isTopLevelMsg;
+
+  public @(message.structure.namespaced_type.name)()
+  {
+    isTopLevelMsg = true;
+    handle = @(native_methods).@(create_message['function_name'])();
+    //SetNestedHandles();
+  }
 
 }
