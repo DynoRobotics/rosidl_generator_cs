@@ -44,7 +44,7 @@ namespace msg
 {
 
 internal static class @(native_methods)
-}
+{
   private static readonly DllLoadUtils dllLoadUtils = DllLoadUtilsFactory.GetDllLoadUtils();
 
   private static readonly IntPtr typeSupportEntryPointLibrary = dllLoadUtils.LoadLibrary(
@@ -97,7 +97,7 @@ for member in message.structure.members:
        'native_library': 'messageSupportLibrary'})
 
     native_write_field_methods.append(
-      {'function_name': '%s_native_write' % (msg_full_name),
+      {'function_name': '%s__native_write' % (msg_full_name),
        'args': write_args,
        'return_type': 'void',
        'native_library': 'messageSupportLibrary'})
@@ -140,4 +140,69 @@ private IntPtr handle;
     //SetNestedHandles();
   }
 
+  public void Dispose()
+  {
+    if(!disposed)
+    {
+      if(isTopLevelMsg)
+      {
+        handle = @(native_methods).@(destroy_message['function_name'])(handle);
+        disposed = true;
+      }
+    }
+  }
+
+  ~@(message.structure.namespaced_type.name)()
+  {
+    Dispose();
+  }
+
+  public static IntPtr _GET_TYPE_SUPPORT()
+  {
+    return @(native_methods).@(get_type_support['function_name'])();
+  }
+
+  public IntPtr TypeSupportHandle
+  {
+    get
+    {
+      return _GET_TYPE_SUPPORT();
+    }
+  }
+
+  public IntPtr Handle
+  {
+    get
+    {
+      return handle;
+    }
+  }
+
+@[for member in message.structure.members]@
+@[  if isinstance(member.type, BasicType)]
+@{
+msg_full_name = '__'.join(
+  message.structure.namespaced_type.namespaces +
+  [convert_camel_case_to_lower_case_underscore(message.structure.namespaced_type.name)] +
+  [member.name])
 }
+  public @(get_dotnet_type(member.type)) @(member.name)
+  {
+    get
+    {
+      //TODO(sam): add string support
+      return @(msg_full_name)__native_read(handle);
+    }
+    set
+    {
+      return @(msg_full_name)__native_write(handle, value);
+    }
+  }
+@[  end if]
+@[end for]@
+
+}
+
+} // msg
+
+} // package

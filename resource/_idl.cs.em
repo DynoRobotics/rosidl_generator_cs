@@ -1,6 +1,6 @@
-# generated from rosidl_generator_cs/resource/_idl.cs.em
-# with input from @(package_name):@(interface_path)
-# generated code does not contain a copyright notice
+// generated from rosidl_generator_cs/resource/_idl.cs.em
+// with input from @(package_name):@(interface_path)
+// generated code does not contain a copyright notice
 @
 @#######################################################################
 @# EmPy template for generating _<idl>.cs files
